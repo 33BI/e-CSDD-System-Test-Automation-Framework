@@ -1,0 +1,73 @@
+name: Playwright Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Enter your EMAIL'
+        required: true
+      password:
+        description: 'Enter your PASSWORD'
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Check site accessibility
+        run: |
+          curl -v -s --head --request GET https://e.csdd.lv/ \
+          -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
+          | grep "200 OK" > /dev/null
+          if [ $? -eq 0 ]; then
+            echo "Site is accessible."
+          else
+            echo "Site is not accessible. Check firewall or proxy settings."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          npm install -g yarn
+          yarn install
+          rm -rf node_modules
+          yarn install --frozen-lockfile
+
+      - name: Install Playwright version 1.33.0
+        run: npm install playwright@1.33.0
+
+      - name: Install Chrome Browser for Playwright
+        run: |
+          npx playwright install-deps chromium
+          npx playwright install chromium
+
+      - name: Create .env file
+        run: |
+          echo "EMAIL=${{ secrets.EMAIL }}" >> .env
+          echo "PASSWORD=${{ secrets.PASSWORD }}" >> .env
+
+      - name: Verify .env file content
+        run: cat .env
+
+      - name: Run Playwright tests
+        env:
+          EMAIL: ${{ secrets.EMAIL }}
+          PASSWORD: ${{ secrets.PASSWORD }}
+        run: |
+          echo "Running tests with the provided credentials"
+          npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
