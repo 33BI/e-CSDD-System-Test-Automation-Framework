@@ -315,7 +315,3 @@ For questions or issues:
 - Contact the QA team
 
 ---
-
-**Version**: 1.0.0  
-**Last Updated**: September 2025  
-**Maintained by**: QA Team"# e-CSDD-System-Test-Automation-Framework" 
